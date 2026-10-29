@@ -24,8 +24,8 @@ function categorizeStocks(stocks) {
 function NaoEncontrado() {
   return (
     <div className="empty">
-      <p>Categoria não encontrada.</p>
-      <NavLink to="/">Voltar ao catálogo</NavLink>
+      <p>Categoria ou página não encontrada.</p>
+      <NavLink to="/" style={{ color: 'var(--accent)' }}>Voltar ao catálogo</NavLink>
     </div>
   )
 }
@@ -46,8 +46,14 @@ export default function App() {
       setStatus('loading')
       setError(null)
       try {
-        const data = await fetchStocks({ signal: controller.signal })
+        // 👇 16 AÇÕES NO TOTAL AGORA
+        const data = await fetchStocks({
+          symbols: 'PETR4,VALE3,ITUB4,MGLU3,BBDC4,ABEV3,WEGE3,BBAS3,RENT3,PRIO3,SUZB3,ELET3,B3SA3,RADL3,CSAN3,GGBR4', 
+          signal: controller.signal 
+        })
+        
         if (!data.length) throw new Error('A API retornou uma lista vazia.')
+        
         setStocks(data)
         setStatus('ready')
       } catch (err) {
@@ -91,17 +97,19 @@ export default function App() {
 
       <main id="conteudo" className="container app-main">
         <Routes>
-          <Route path="/"                   element={<CatalogoAcoes {...pageProps} category="all" />} />
-          <Route path="/mais-valorizadas"   element={<CatalogoAcoes {...pageProps} category="high" />} />
-          <Route path="/medianas"           element={<CatalogoAcoes {...pageProps} category="mid" />} />
-          <Route path="/pouco-valorizadas"  element={<CatalogoAcoes {...pageProps} category="low" />} />
-          <Route path="/sobre"              element={<Sobre />} />
-          <Route path="*"                   element={<NaoEncontrado />} />
+          <Route path="/" element={<CatalogoAcoes {...pageProps} category="all" />} />
+          <Route path="/mais-valorizadas" element={<CatalogoAcoes {...pageProps} category="high" />} />
+          <Route path="/medianas" element={<CatalogoAcoes {...pageProps} category="mid" />} />
+          <Route path="/pouco-valorizadas" element={<CatalogoAcoes {...pageProps} category="low" />} />
+          <Route path="/sobre" element={<Sobre />} />
+          <Route path="*" element={<NaoEncontrado />} />
         </Routes>
       </main>
 
       <footer className="container app-footer">
-        Fonte configurável em <code>.env</code> → <code>VITE_API_BASE_URL</code> / <code>VITE_API_TOKEN</code>.
+        <span>
+          Projeto de estudo focado no mercado de ações. Integração configurada em <code>src/services/stockService.js</code>.
+        </span>
       </footer>
     </>
   )

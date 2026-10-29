@@ -329,7 +329,7 @@
 }
 .valuation-high { background: rgba(79, 140, 255, .16); color: var(--accent); }
 .valuation-mid  { background: rgba(245, 178, 66, .16); color: var(--warn); }
-.valuation-low  { background: rgba(138, 151, 173, .18); color: var(--text-muted); }
+.valuation-low  { background: rgba(141, 29, 29, 0.466); color: var(--low); }
 
 /* Skeletons */
 .skeleton { gap: 12px; }

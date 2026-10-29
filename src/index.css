@@ -12,7 +12,7 @@
   --down-soft: rgba(240, 82, 82, 0.14);
   --warn: #f5b242;
   --warn-soft: rgba(245, 178, 66, 0.14);
-  --low: rgba(180, 59, 59, 0.555);
+  --low: rgb(231, 26, 26);
   --radius: 14px;
   color-scheme: dark;
 }

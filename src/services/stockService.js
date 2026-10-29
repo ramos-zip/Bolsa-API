@@ -1,35 +1,46 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://brapi.dev/api'
-const TOKEN = import.meta.env.VITE_API_TOKEN ?? ''
+const BASE_URL = '/api/bolsai'
 
-function normalize(raw) {
+/**
+ * Normaliza a resposta do endpoint /stats da Bolsai.
+ * Ele retorna: close, daily_change, daily_change_pct, etc.
+ */
+function normalize(raw, ticker) {
   return {
-    symbol: String(raw.symbol ?? raw.stock ?? '').toUpperCase(),
-    name: raw.shortName ?? raw.name ?? raw.longName ?? raw.symbol ?? '—',
-    price: Number(raw.regularMarketPrice ?? raw.close ?? 0),
-    change: Number(raw.regularMarketChange ?? raw.change ?? 0),
-    changePercent: Number(
-      raw.regularMarketChangePercent ?? raw.changePercent ?? 0,
-    ),
-    logo: raw.logo ?? null,
+    symbol: ticker.replace('.SA', '').toUpperCase(),
+    name: raw.name ?? ticker.replace('.SA', '').toUpperCase(), // Bolsai /stats não traz o nome, usamos o ticker
+    price: Number(raw.close ?? 0),
+    change: Number(raw.daily_change ?? 0),
+    changePercent: Number(raw.daily_change_pct ?? 0),
+    logo: null, // Bolsai não fornece logo público neste endpoint
     sector: raw.sector ?? null,
-    currency: raw.currency ?? 'BRL',
-    market: raw.market ?? 'B3',
+    currency: 'BRL',
+    market: 'B3',
   }
 }
 
-export async function fetchStocks({ signal } = {}) {
-  const params = new URLSearchParams()
-  if (TOKEN) params.set('token', TOKEN)
+export async function fetchStocks({ symbols = 'PETR4,VALE3', signal } = {}) {
+  // Limpa o .SA caso venha do front, pois a Bolsai usa o ticker puro
+  const tickers = symbols.split(',').map((t) => t.replace('.SA', '').trim())
 
-  const url = `${BASE_URL}/quote/list${params.size ? `?${params}` : ''}`
-  const response = await fetch(url, { signal })
+  const promises = tickers.map(async (ticker) => {
+    const url = `${BASE_URL}/stocks/${ticker}/stats`
+    const response = await fetch(url, { signal })
 
-  if (!response.ok) {
-    throw new Error(`Falha ao buscar ações (HTTP ${response.status})`)
-  }
+    if (!response.ok) {
+      if (response.status === 401) throw new Error('401: Chave da Bolsai inválida ou ausente.')
+      if (response.status === 404) throw new Error(`404: Ativo ${ticker} não encontrado na Bolsai.`)
+      if (response.status === 429) {
+        const retry = response.headers.get('Retry-After') || '60'
+        throw new Error(`429: Limite de requisições da Bolsai atingido. Tente novamente em ${retry}s.`)
+      }
+      throw new Error(`Falha ao buscar ${ticker} (HTTP ${response.status})`)
+    }
 
-  const data = await response.json()
-  const list = data.stocks ?? data.results ?? data.data ?? []
+    const data = await response.json()
+    // O endpoint /stats devolve os dados diretamente no root
+    return normalize(data, ticker)
+  })
 
-  return list.map(normalize)
+  // Executa todas as requisições em paralelo
+  return Promise.all(promises)
 }
